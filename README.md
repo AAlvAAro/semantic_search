@@ -34,8 +34,8 @@ bin/rails db:prepare
 git clone --depth 1 https://github.com/rails/rails vendor/rails   # the Guides, git-ignored
 
 bin/rails guides:warmup            # download the embedding model once
-bin/rails 'guides:ingest[150]'     # ~4,750 chunks, ~80 s on an M-series Mac
-bin/rails 'guides:ingest[30]'      # ~17,800 chunks, ~4 min (for the eval's "break it" run)
+bin/rails 'guides:ingest[150]'     # 4,743 chunks (first run: 79 s on an M-series Mac)
+bin/rails 'guides:ingest[30]'      # 17,759 chunks (first run: 253 s), for the eval's "break it" run
 
 bin/rails server                   # http://localhost:3000
 ```
@@ -59,6 +59,77 @@ embedded.
 
 The page uses `w150` and shows keyword and vector search. Hybrid isn't on the page, but the eval
 measures it.
+
+## How the Rails Guides get into the database
+
+1. **Source.** The Guides are markdown files in the Rails repo under `guides/source/`. Nothing is
+   scraped from the website: `git clone --depth 1 https://github.com/rails/rails vendor/rails`
+   (`vendor/rails` is git-ignored). Set `GUIDES_PATH` to read them from somewhere else.
+2. **Run the task.** `bin/rails 'guides:ingest[150]'`, where the number is the max words per chunk.
+   It reads every `guides/source/*.md` file (76 today, release notes included).
+3. **Chunk** (`GuideChunker`):
+   - Split at headings. The Guides write H1/H2 as setext (`Title` over a line of `=` or `-`) and
+     H3+ as `###`; both count, and `#` lines inside fenced code don't. Each section keeps its
+     heading path from H2 down, e.g. `Transaction Callbacks > Aliases for after_commit` (the H1 is
+     the guide name, which every chunk already has).
+   - Clean the prose before chunking: drop the "DO NOT READ THIS FILE ON GITHUB" banner, the
+     `NOTE:` / `TIP:` / `INFO:` / `WARNING:` / `CAUTION:` / `IMPORTANT:` prefixes, reference-link
+     definitions (`[foo]: https://...`, even when the URL wraps), horizontal rules, `<br>` and
+     `**`. Links become their text: `[text](url)` and `[text][]` → `text`. Headings get the same
+     link cleanup. Code inside fences is left untouched. (The Guides have no `{#anchor}` markers,
+     so there is nothing to strip there.)
+   - Pack paragraphs (split on blank lines) into chunks up to the word limit.
+   - Cut any single paragraph longer than the limit by words.
+4. **Save.** Each chunk is a row in `chunks` with `variant` (`w150`), `guide`, `position`,
+   `heading` and `body`. Rows are found by `variant + guide + position` (a unique index), so
+   re-running updates rows instead of duplicating them.
+5. **Embed** (`EmbedChunkJob`, run with `perform_now`). The text to embed is
+   `guide name > heading`, a newline, then the body. It is hashed with the model name (SHA256). If
+   the hash matches the stored `content_hash`, the row is skipped. Otherwise `Embedder.call`
+   returns the vector, and the job saves `embedding`, `content_hash` and `embedding_model`.
+6. **Clean up.** If a guide now produces fewer chunks than before, its leftover rows are deleted.
+7. **Second variant.** `bin/rails 'guides:ingest[30]'` stores 30-word chunks as `w30` in the same
+   table. The page reads `w150`; the eval's "break it" run reads `w30` (`CHUNK_VARIANT=w30`).
+8. **Re-running is safe and cheap.** The task prints how many chunks it embedded and how many were
+   unchanged. A re-run with no changes embeds 0.
+9. **The test database needs its own copy.** Run `RAILS_ENV=test bin/rails 'guides:ingest[150]'`
+   (and `[30]`) before `bin/rails test test/evals`.
+
+Measured on an M-series Mac: the first `w150` run embedded 4,705 chunks in 79 s, and the first
+`w30` run embedded 17,828 in 253 s. After the chunker cleanup the tables hold 4,743 and 17,759
+chunks.
+
+## The embedding model
+
+[`sentence-transformers/all-MiniLM-L6-v2`](https://huggingface.co/sentence-transformers/all-MiniLM-L6-v2),
+run locally by the [informers](https://github.com/ankane/informers) gem and wrapped in
+`app/services/embedder.rb`.
+
+- **What it is.** An embedding model, not a chat model. It turns a sentence or short paragraph
+  into a 384-dimensional vector, and texts with similar meaning get vectors that are close
+  together. It was fine-tuned from MiniLM with a contrastive objective on over a billion sentence
+  pairs. It's small (22.7M parameters), English-only and Apache-2.0.
+- **Its limit.** It was trained on inputs of up to 256 tokens, and the model card says longer text
+  is truncated at 256. informers actually cuts at 512 tokens (the tokenizer's `model_max_length`),
+  so text between 256 and 512 tokens is still embedded, but past what the model learned from.
+  Either way, long text is cut silently, which is why chunk size matters. At 150 words the median
+  chunk is about 161 tokens.
+- **Vectors.** One string in, one array of 384 floats out, mean-pooled and normalized (informers'
+  defaults), compared by cosine distance.
+- **Where it's used.** Twice, always the same model: once per chunk at ingestion, and once per
+  question at search time. Vectors from different models aren't comparable.
+- **Why this one:**
+  1. Fully local. No API key, no cost, and no network after the first download
+     (`bin/rails guides:warmup`), so the demo works offline.
+  2. Small and fast enough to embed all the Guides on a laptop CPU and each question instantly.
+  3. Built for short-passage semantic search, which matches our chunk sizes.
+  4. A widely used, recognizable baseline.
+  5. Its short input limit makes the chunking lesson concrete.
+- **Trade-off.** Hosted embedding models (OpenAI, Bedrock, Cohere) are generally more accurate
+  and accept much longer input, at the cost of an API key, money and a network call per question.
+  To switch, change `Embedder::MODEL` and `DIMENSIONS`, update the vector size in the migration,
+  and re-run ingestion. The model name is part of the content hash, so every row re-embeds
+  automatically.
 
 ## The eval
 
