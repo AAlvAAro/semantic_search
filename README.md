@@ -20,7 +20,8 @@ download.
 | `best hiking trails in Patagonia` | Nothing | Five results anyway, all dimmed: **Not covered in the Guides** (0.73, past the 0.68 cutoff) |
 
 Then in the terminal, the eval passes on 150-word chunks and fails on 30-word chunks.
-The talk script is in [`docs/DEMO.md`](docs/DEMO.md).
+The talk script is in [`docs/DEMO.md`](docs/DEMO.md), and the slides are in
+[`docs/semantic-search-in-rails.pptx`](docs/semantic-search-in-rails.pptx).
 
 ## Quick start
 
