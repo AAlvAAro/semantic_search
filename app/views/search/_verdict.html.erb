@@ -1,0 +1,14 @@
+<div class="verdict <%= @covered ? "is-covered" : "is-not-covered" %>" aria-live="polite">
+  <% if @covered %>
+    <h3><%= link_to @best.citation, @best.url %></h3>
+    <p class="passage"><%= excerpt_for(@best) %></p>
+  <% else %>
+    <h3>Not covered in the Guides</h3>
+    <p>
+      The closest passage is <%= distance_label(@best.neighbor_distance) %> away, past the
+      <%= ChunkSearch::MAX_DISTANCE %> cutoff, so this page shows no answer instead of a wrong one.
+    </p>
+  <% end %>
+
+  <%= render "ruler", distance: @best.neighbor_distance %>
+</div>

@@ -1,0 +1,142 @@
+/*
+  Semantic Search in Rails: demo page styles.
+  Built for a projector: light background, large type, high contrast.
+  Two type roles: the interface speaks in a sans, the retrieved passages
+  (the documents) read in a serif, so it is always clear what came from the Guides.
+  The only accent is Rails red, used for the cutoff line on the distance ruler.
+  System fonts only, so the page works offline.
+*/
+:root {
+  --paper: #f8f9fb;
+  --ink: #1e232b;
+  --muted: #5d6673;
+  --line: #d5dae1;
+  --rails: #c1121f;
+  --match: #17715f;
+
+  --sans: system-ui, -apple-system, "Segoe UI", Roboto, "Helvetica Neue", sans-serif;
+  --serif: Charter, "Bitstream Charter", "Iowan Old Style", "Sitka Text", Cambria, Georgia, serif;
+  --mono: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
+
+  font-size: clamp(17px, 0.6vw + 12px, 22px);
+}
+
+*,
+*::before,
+*::after { box-sizing: border-box; }
+
+body {
+  margin: 0;
+  background: var(--paper);
+  color: var(--ink);
+  font-family: var(--sans);
+  line-height: 1.45;
+}
+
+a { color: inherit; text-decoration-thickness: 1px; text-underline-offset: 0.18em; }
+a:hover { text-decoration-thickness: 2px; }
+
+:focus-visible { outline: 3px solid var(--ink); outline-offset: 3px; }
+
+code { font-family: var(--mono); font-size: 0.9em; }
+
+.visually-hidden {
+  position: absolute; width: 1px; height: 1px; overflow: hidden;
+  clip: rect(0 0 0 0); white-space: nowrap;
+}
+
+.page { max-width: 88rem; margin: 0 auto; padding: 2.5rem 2rem 4rem; }
+
+/* Masthead */
+.masthead h1 { margin: 0; font-size: 2.4rem; font-weight: 700; letter-spacing: -0.02em; }
+
+/* Query */
+.query { display: flex; gap: 0.75rem; margin: 1.75rem 0 2.25rem; }
+.query input[type="search"] {
+  flex: 1; min-width: 0;
+  font: inherit; font-size: 1.35rem;
+  padding: 0.8rem 1rem;
+  border: 2px solid var(--ink); border-radius: 0.5rem; background: #fff; color: var(--ink);
+}
+.query input[type="submit"] {
+  font: inherit; font-size: 1.1rem; font-weight: 600;
+  padding: 0 1.4rem; border: 0; border-radius: 0.5rem;
+  background: var(--ink); color: var(--paper); cursor: pointer;
+}
+
+/* Verdict, at the top of the vector box: the best match, or an honest "not covered" */
+.verdict { padding: 0 0 1.5rem; margin-bottom: 1.25rem; border-bottom: 1px solid var(--line); }
+.verdict h3 { margin: 0 0 0.5rem; font-size: 1.45rem; letter-spacing: -0.01em; overflow-wrap: anywhere; }
+.verdict.is-not-covered h3 { color: var(--ink); }
+.verdict p { margin: 0; max-width: 70ch; }
+
+.passage { font-family: var(--serif); font-size: 1.05rem; line-height: 1.6; }
+
+/* Distance ruler: the one memorable element of the page */
+.ruler { margin: 1.5rem 0 0; max-width: 46rem; }
+.ruler__track {
+  position: relative; height: 0.5rem;
+  background: var(--line); border-radius: 999px;
+}
+.ruler__cutoff {
+  position: absolute; top: -0.6rem; bottom: -0.6rem; width: 3px;
+  left: calc(var(--cutoff) * 100%);
+  background: var(--rails);
+}
+.ruler__dot {
+  position: absolute; top: 50%;
+  left: calc(var(--d) * 100%);
+  width: 1.3rem; height: 1.3rem; border-radius: 50%;
+  transform: translate(-50%, -50%);
+  background: var(--match); border: 3px solid var(--paper);
+}
+.is-not-covered .ruler__dot { background: var(--muted); }
+.ruler__scale {
+  display: flex; justify-content: space-between;
+  margin-top: 0.6rem; font-size: 0.85rem; color: var(--muted);
+}
+.ruler figcaption { margin-top: 0.35rem; font-weight: 600; }
+
+/* Keyword and vector side by side, stacked on narrow screens */
+.columns {
+  display: grid; gap: 1.5rem;
+  grid-template-columns: repeat(auto-fit, minmax(min(24rem, 100%), 1fr));
+}
+.column {
+  min-width: 0; padding: 1.5rem;
+  border: 1px solid var(--line); border-radius: 0.5rem; background: #fff;
+}
+.column h2 { margin: 0; font-size: 1.5rem; }
+.column__how { margin: 0.2rem 0 1rem; color: var(--muted); font-size: 0.95rem; }
+.column__empty {
+  margin: 0; padding: 1rem; border: 1px dashed var(--line); border-radius: 0.5rem; color: var(--muted);
+}
+
+.results { margin: 0; padding-left: 1.4rem; }
+.result { margin-bottom: 1.1rem; }
+.result::marker { color: var(--muted); font-weight: 600; }
+.result__title { font-weight: 600; overflow-wrap: anywhere; }
+.result__distance {
+  margin-left: 0.4rem; padding: 0.05rem 0.4rem; border-radius: 0.3rem;
+  background: var(--line); font-size: 0.85rem; font-variant-numeric: tabular-nums;
+}
+.result .passage { margin: 0.3rem 0 0; font-size: 0.95rem; color: #3a414c; }
+
+/* Vector search always returns something; the cutoff decides what counts. */
+.result.is-past-cutoff { opacity: 0.45; }
+.result__cutoff {
+  margin-left: 0.4rem; padding: 0.05rem 0.4rem; border: 1px solid var(--muted); border-radius: 0.3rem;
+  font-size: 0.85rem; color: var(--muted);
+}
+
+.notice { padding: 1.5rem; border: 2px solid var(--ink); border-radius: 0.5rem; }
+.notice h2 { margin: 0 0 0.5rem; }
+.notice p { margin: 0; }
+
+@media (max-width: 40rem) {
+  .page { padding: 1.5rem 1rem 3rem; }
+  .column { padding: 1rem; }
+  .masthead h1 { font-size: 1.8rem; }
+  .query { flex-direction: column; }
+  .query input[type="submit"] { padding: 0.8rem; }
+}

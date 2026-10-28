@@ -1,0 +1,15 @@
+<%# The one visual idea of the page: where the best match sits relative to the cutoff. %>
+<figure class="ruler"
+        style="--d: <%= ruler_position(distance) %>; --cutoff: <%= ruler_position(ChunkSearch::MAX_DISTANCE) %>;">
+  <div class="ruler__track" aria-hidden="true">
+    <span class="ruler__cutoff"></span>
+    <span class="ruler__dot"></span>
+  </div>
+  <div class="ruler__scale" aria-hidden="true">
+    <span>Same meaning</span>
+    <span>Unrelated</span>
+  </div>
+  <figcaption>
+    Distance <%= distance_label(distance) %>, cutoff <%= ChunkSearch::MAX_DISTANCE %>
+  </figcaption>
+</figure>

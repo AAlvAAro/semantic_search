@@ -1,0 +1,25 @@
+<section class="column">
+  <h2><%= title %></h2>
+  <p class="column__how"><%= how %></p>
+
+  <%# The cutoff story lives with vector search: verdict and ruler on top. %>
+  <%= render "verdict" if local_assigns[:vector] && @best %>
+
+  <% if chunks.any? %>
+    <ol class="results">
+      <% chunks.each do |chunk| %>
+        <% past_cutoff = local_assigns[:vector] && chunk.neighbor_distance > ChunkSearch::MAX_DISTANCE %>
+        <li class="<%= class_names("result", "is-past-cutoff": past_cutoff) %>">
+          <%= link_to chunk.citation, chunk.url, class: "result__title" %>
+          <% if local_assigns[:vector] %>
+            <span class="result__distance"><%= distance_label(chunk.neighbor_distance) %></span>
+            <% if past_cutoff %><span class="result__cutoff">past cutoff</span><% end %>
+          <% end %>
+          <p class="passage"><%= excerpt_for(chunk, length: 160) %></p>
+        </li>
+      <% end %>
+    </ol>
+  <% else %>
+    <p class="column__empty"><%= empty %></p>
+  <% end %>
+</section>

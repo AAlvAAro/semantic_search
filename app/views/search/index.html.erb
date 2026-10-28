@@ -1,0 +1,37 @@
+<% content_for :title, "Semantic Search in Rails" %>
+
+<main class="page">
+  <header class="masthead">
+    <h1>Ask the Rails Guides</h1>
+  </header>
+
+  <%= form_with url: root_path, method: :get, class: "query" do %>
+    <%= label_tag :q, "Your question", class: "visually-hidden" %>
+    <%= search_field_tag :q, @query,
+          placeholder: "Ask in your own words, e.g. make sure a field is not left blank before saving",
+          autofocus: true, autocomplete: "off" %>
+    <%= submit_tag "Search", name: nil %>
+  <% end %>
+
+  <% if !@indexed %>
+    <section class="notice">
+      <h2>No passages for variant <%= @variant %> yet</h2>
+      <p>Run <code>bin/rails 'guides:ingest[<%= @variant.delete("w") %>]'</code>, then reload this page.</p>
+    </section>
+
+  <% elsif @query.present? %>
+    <div class="columns">
+      <%= render "column",
+            title: "Keyword search",
+            how: "Every word of the question must appear in the passage.",
+            chunks: @keyword,
+            empty: "No passage contains every word of this question." %>
+      <%= render "column",
+            title: "Vector search",
+            how: "Closest meaning, by cosine distance.",
+            chunks: @vector,
+            vector: true,
+            empty: "No passages found." %>
+    </div>
+  <% end %>
+</main>

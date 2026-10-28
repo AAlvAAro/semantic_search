@@ -1,0 +1,58 @@
+# in_scope: each question lists the guides (file names without .md) that would be
+# an acceptable source. A question is a hit if ANY chunk from ANY listed guide
+# appears in the top K. Matching is by guide, not by chunk, so the same golden
+# set works when the chunk size changes.
+#
+# Guide names are checked against guides/source in rails/rails main. The
+# eval's first test fails loudly if none of a question's guides exist in
+# your data, so fix names there rather than guessing.
+#
+# out_of_scope: questions the Guides cannot answer. semantic_search should
+# return nothing for these. Keep them clearly unrelated: a near-miss such as
+# "configure Phoenix LiveView in Rails" lands next to real Rails passages and
+# the distance cutoff cannot reject it (see ChunkSearch::MAX_DISTANCE).
+
+in_scope:
+  - question: "run code only after the database transaction commits"
+    expected: [active_record_callbacks]
+
+  - question: "change the database schema safely"
+    expected: [active_record_migrations]
+
+  - question: "make sure a field isn't left blank before saving"
+    expected: [active_record_validations]
+
+  - question: "load related records without one query per row"
+    expected: [active_record_querying, association_basics]
+
+  - question: "send an email to a user"
+    expected: [action_mailer_basics]
+
+  - question: "run work in the background"
+    expected: [active_job_basics]
+
+  - question: "protect a form from cross-site request forgery"
+    expected: [security]
+
+  - question: "store uploaded files in the cloud"
+    expected: [active_storage_overview]
+
+  - question: "speed up a page by saving parts of it"
+    expected: [caching_with_rails]
+
+  - question: "push live updates to the browser"
+    expected: [action_cable_overview]
+
+  - question: "translate the app into other languages"
+    expected: [i18n]
+
+  - question: "use different settings in production and development"
+    expected: [configuring]
+
+  - question: "map a URL to a controller action"
+    expected: [routing]
+
+out_of_scope:
+  - "best hiking trails in Patagonia"
+  - "what is a good sourdough starter ratio"
+  - "how do I train a neural network in PyTorch"
